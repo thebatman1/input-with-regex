@@ -8,7 +8,8 @@ export default function App() {
       <h1>Hello CodeSandbox</h1>
       <h2>Start editing to see some magic happen!</h2>
       <Input type="text" validationRegex={/^[a-zA-Z]+$/} />
-      <Input type="text" validationRegex={/^[1-9][0-9]*$/} />
+      <Input type="number" validationRegex={/^[1-9][0-9]*$/} />
+      <input type="text" pattern="[a-zA-Z]+" />
     </div>
   );
 }
