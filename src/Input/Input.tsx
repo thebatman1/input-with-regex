@@ -1,109 +1,68 @@
 import React, { InputHTMLAttributes, ReactElement } from "react";
 
 interface IProps extends InputHTMLAttributes<HTMLInputElement> {
+  /** Additional classNames for styling */
   className?: string;
+  /** The regular expressions to validate */
   validationRegex?: RegExp;
+  /** The type of input */
   type?: string;
+  /** onChange handler */
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-interface IOptions {
-  /** The value obtained from e.target.value */
-  targetValue: string;
-  /** The new text to be entered or pasted */
-  text: string;
-  /** The validation regex */
-  regex: RegExp;
-  /** The starl of the text selection */
-  selectionStart: number;
-  /** The end of the text selection */
-  selectionEnd: number;
-}
-
-const getValueToBePasted = ({
-  targetValue,
-  text,
-  regex,
-  selectionStart,
-  selectionEnd
-}: IOptions): string => {
-  let newValue: string;
-
-  if (selectionStart === selectionEnd) {
-    // If the text is not selected,
-    // insert at the current cursor position
-    newValue = `${targetValue.substring(
-      0,
-      selectionStart
-    )}${text}${targetValue.substring(selectionStart)}`;
-  } else {
-    // if the text inside the input box is selected,
-    // replace the selected text with given text
-    newValue = targetValue.replace(
-      targetValue.substring(selectionStart, selectionEnd),
-      text
-    );
+const getValueToBePasted = (
+  targetValue: string,
+  regex: RegExp,
+  text: string
+): string => {
+  if (!targetValue) {
+    return "";
   }
-  return regex.test(newValue) ? newValue : targetValue;
+  return regex.test(targetValue) ? targetValue : text;
 };
 
-const onPasteHandler = (
-  e: React.ClipboardEvent<HTMLInputElement>,
-  validationRegex: RegExp
+const onChangeHandler = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  validationRegex: RegExp,
+  onChangeFn
 ) => {
-  e.preventDefault();
-  // Typecast e.target to HTMLInputElement otherwise e.target.value
-  // will throw compilation error
-  const target = e.target as HTMLInputElement;
-  const { selectionStart, selectionEnd, value } = target;
+  if (validationRegex) {
+    // Typecast e.target to HTMLInputElement otherwise e.target.value
+    // will throw compilation error
+    const target = e.target as HTMLInputElement;
+    // Getiing the reference of the hidden input element
+    // whose sole purpose is to collect data
+    // We will use this input element to store the
+    // previous value while we add items to the current element
+    const valStore = e.target.parentElement.lastChild as HTMLInputElement;
 
-  // Get the copied text and check if it can be pasted
-  const clipboardText = e.clipboardData.getData("text");
-  target.value = getValueToBePasted({
-    targetValue: value,
-    text: clipboardText,
-    regex: validationRegex,
-    selectionStart,
-    selectionEnd
-  });
-  const cursorPosition =
-    target.value !== value
-      ? selectionStart + clipboardText.length
-      : selectionEnd;
-  target.selectionStart = cursorPosition;
-  target.selectionEnd = cursorPosition;
-};
-
-const onKeyPressHandler = (
-  e: React.KeyboardEvent<HTMLInputElement>,
-  validationRegex: RegExp
-) => {
-  e.preventDefault();
-  const target = e.target as HTMLInputElement;
-  const { value, selectionStart, selectionEnd } = target;
-  target.value = getValueToBePasted({
-    targetValue: value,
-    text: e.key,
-    regex: validationRegex,
-    selectionStart,
-    selectionEnd
-  });
-  const cursorPosition =
-    target.value !== value ? selectionStart + 1 : selectionEnd;
-  target.selectionStart = cursorPosition;
-  target.selectionEnd = cursorPosition;
+    // Pass the previous value and the current value to
+    // the function to decide what to show
+    const val = getValueToBePasted(
+      target.value,
+      validationRegex,
+      valStore.value
+    );
+    // Update the values
+    target.value = val;
+    valStore.value = val;
+  }
+  onChangeFn(e);
 };
 
 const Input = React.forwardRef(
   (props: IProps, ref: React.Ref<HTMLInputElement>): ReactElement => {
-    const { validationRegex, type } = props;
+    const { validationRegex, type, onChange, value, ...rest } = props;
     return (
       <div>
         <input
           ref={ref}
           type={type}
-          onPaste={e => onPasteHandler(e, validationRegex)}
-          onKeyPress={e => onKeyPressHandler(e, validationRegex)}
+          onChange={e => onChangeHandler(e, validationRegex, onChange)}
+          {...rest}
         />
+        <input type="hidden" value="" />
       </div>
     );
   }
@@ -112,7 +71,8 @@ const Input = React.forwardRef(
 Input.defaultProps = {
   type: "text",
   className: "",
-  validationRegex: null
+  validationRegex: null,
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => {}
 };
 
 export default Input;
