@@ -8,7 +8,7 @@ interface IProps extends InputHTMLAttributes<HTMLInputElement> {
   /** The type of input */
   type?: string;
   /** onChange handler */
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const getValueToBePasted = (
